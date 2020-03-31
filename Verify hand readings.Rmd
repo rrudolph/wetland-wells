@@ -1,0 +1,90 @@
+```{r fig.width=12, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(glue)
+library(knitr)
+
+wellData <- read_csv("All_well_data_combined.csv", 
+                     col_types = cols(`Barometric Pressure (PSI)` = col_skip(), 
+                                      `Date and Time` = col_datetime(format = "%m/%d/%Y %H:%M:%S %p"), 
+                                      `Depth (ft)` = col_skip(), 
+                                      Seconds = col_skip(), 
+                                      `Temperature (C)` = col_skip(), 
+                                      `Unnamed: 5` = col_skip(), 
+                                      `Unnamed: 6` = col_skip()))
+
+# Rename the fields
+names(wellData) <- c('DateTime', 'PSI', 'Well' )
+
+# Format the date field 
+wellData$Date <- format(wellData$DateTime, "%m-%d-%Y")
+wellData$Date<- as.Date(wellData$Date, format="%m-%d-%Y")
+
+
+# Get the stats for each well needed to perform the calculations
+well_stats <- read_excel("Well Stats.xlsx")
+
+
+# Function to extract stats from the well stats table
+get_stat <- function(stat, wellName){
+  return_stat <- well_stats %>% 
+    filter(Well == !!wellName) %>% 
+    pull(stat)
+  return(return_stat)
+}
+
+
+get_psi <-  function(wellName, dateTime){
+  return_psi <- wellData %>% 
+    filter(Well == !!wellName) %>% 
+    filter(DateTime == !!dateTime) %>% 
+    pull(PSI)
+  return(return_psi)
+}
+
+
+# Variables to edit
+well = "PH6"
+date = "2019-02-08"
+hourStart = "11"
+hourEnd = "12"
+handReading_ft =1.33
+handReading_minute = 47
+
+options(scipen=999)
+dateTime_start = ymd_hms(glue("{date}-{hourStart}-00-00"))
+dateTime_end = ymd_hms(glue("{date}-{hourEnd}-00-00"))
+psi_start <- get_psi(well, dateTime_start)
+psi_end <- get_psi(well, dateTime_end)
+max_val <- max(psi_start, psi_end)
+min_val <- min(psi_start, psi_end)
+
+x <- c(0, 60) # values in minutes start and end
+y <- c(min_val, max_val) # values in PSI, start and end
+
+# solve for y1 (water depth at hand read time in minutes)
+psi_interpolated <- approx(x, y, xout = handReading_minute) 
+
+working_table <- tribble(
+  ~dateTime_start, ~dateTime_end, ~psi_start,~psi_end, ~interpolated_PSI, 
+  dateTime_start, dateTime_end, psi_start, psi_end, psi_interpolated[["y"]])
+
+
+tow <- get_stat("tow", well)
+toc <- get_stat("toc", well)
+dgs <- get_stat("dgs", well)
+fbgs <- get_stat("fbgs", well)
+
+# Select just the well needed, and perform the calculations into new fields
+wellSelect <- working_table %>% 
+  mutate(WaterTableElevM = tow-toc+interpolated_PSI*0.703772,
+         GroundSurfaceElev = dgs,
+         FtBelowGS = fbgs,
+         HandReading_m = handReading_ft * 0.3048,
+         HandReadWaterTableElev = tow - HandReading_m,
+         Difference_m = abs(WaterTableElevM - HandReadWaterTableElev),
+         Difference_cm = Difference_m*100)
+
+kable(wellSelect)
+```

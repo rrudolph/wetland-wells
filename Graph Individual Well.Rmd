@@ -1,0 +1,115 @@
+---
+title: "Graph Individual Well"
+author: "Rudolph"
+date: "9/16/2019"
+output: html_document
+---
+```{r fig.width=12, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(glue)
+library(plotly)
+library(scales)
+library(htmltools)
+
+wellNumber <- "PH16"
+```
+## Example for Well `r glue({wellNumber})`
+
+Disclaimer: This is a draft example of displaying a period of record for an individual well at Prisoner's Harbor wetland.  A seperate python script compiles all data for the site into one large csv file, which is the base data for this script. 
+
+**Still to do: some wells have different top of casing readings during certain time frames.  For optimal accuracy, this will need to be incorporated into the script.**
+
+```{r fig.width=12, message=FALSE, warning=FALSE}
+
+
+wellData <- read_csv("combined_csv.csv", 
+    col_types = cols(`Barometric Pressure (PSI)` = col_skip(), 
+        `Date and Time` = col_datetime(format = "%m/%d/%Y %H:%M:%S %p"), 
+        `Depth (ft)` = col_skip(), 
+        Seconds = col_skip(), 
+        `Temperature (C)` = col_skip(), 
+        `Unnamed: 5` = col_skip(), 
+        `Unnamed: 6` = col_skip()))
+
+
+# Rename the fields
+names(wellData) <- c('DateTime', 'PSI', 'Well' )
+
+wellData$Well <- as.factor(wellData$Well)
+
+# Trim out unneeded fields
+wellData$Date <- format(wellData$DateTime, "%m-%d-%Y")
+
+wellData$Date<- as.Date(wellData$Date, format="%m-%d-%Y")
+str(wellData)
+glimpse(wellData)
+
+# Get the stats for each well needed to perform the calculations
+well_stats <- read_excel("~/R Projects/Wetland Wells/Well Stats.xlsx")
+
+
+
+get_stat <- function(stat){
+  return_stat <- well_stats %>% 
+  filter(Well == !!wellNumber) %>% 
+  pull(stat)
+  
+  return(return_stat)
+}
+
+# Pull stats into variables 
+tow <- get_stat("tow")
+toc <- get_stat("toc")
+dgs <- get_stat("dgs")
+fbgs <- get_stat("fbgs")
+
+# Select just the well needed, and perform the calculations into new fields
+wellSelect <- wellData %>% 
+  filter(Well == wellNumber) %>% 
+  mutate(WaterTableElevM = tow-toc+PSI*0.703772,
+         GroundSurfaceElev = dgs,
+         FtBelowGS = fbgs)
+
+# Narrow down the min and max dates
+earliest <- min(wellSelect$Date)
+latest <- max(wellSelect$Date)
+
+# Prepare precip data
+# Source: http://climateanalyzer.science/python/u_thresh.py?station=santa_cruz_raws&year1=2011&year2=2019&title=Santa%20Cruz%20Island%20automated%20station&lowerthresh=daily&upperthresh=70&station_type=RAWS
+precip <- read_csv("~/R Projects/Wetland Wells/santa_cruz_raws_thresholds.csv", 
+                   col_types = cols(`Avg. Relative Humidity (%)` = col_skip(), 
+                                    `Avg. Wind Speed (MPH)` = col_skip(), 
+                                    Date = col_date(format = "%m/%d/%Y"), 
+                                    `Tmax (F)` = col_skip(), 
+                                    `Tmin (F)` = col_skip(),
+                                    X7 = col_skip()))
+
+names(precip) <- c('Date', 'Precip')
+precip$Date <- as.POSIXct(precip$Date)
+
+# Trim to min/max dates pulled in from the well data
+precip <- precip %>% 
+  filter(Date > earliest & Date < latest)
+
+# Make graph to match Joel's excel graph
+p <- ggplot(wellSelect, aes(x = DateTime)) +
+  geom_line(aes(y=WaterTableElevM, colour = "WaterTableElevM"), size=.5, alpha=0.6) +
+  geom_line(aes(y=GroundSurfaceElev, colour = "GroundSurfaceElev"), size=.6, alpha=0.6, ) +
+  geom_line(aes(y=FtBelowGS, colour = "FtBelowGS"), size=.6, alpha=0.6, linetype = "longdash") +
+  # scale_x_date(date_breaks = "2 month", date_labels =  "%b %Y") +
+   scale_x_datetime(labels = date_format("%Y-%m-%d"),
+                     date_breaks = "730 hours") +
+  theme(axis.text.x=element_text(angle=60, hjust=1), legend.position="bottom") +
+  ggtitle(glue("Prisoners Wetland Well {wellNumber} Readings {earliest} to {latest}"), subtitle =  "Height of water above sensor (meters)") + 
+  xlab("Date and Time") +
+  ylab("Meters above Sensor") + 
+  scale_colour_manual("", values = c("WaterTableElevM"="black", "GroundSurfaceElev"="darkgreen",  "FtBelowGS"="blue"))  +
+  geom_bar(data=precip, aes(x=Date, y=Precip), stat="identity", fill="tan1", colour="sienna3") +
+  scale_y_continuous( "meters",  sec.axis = sec_axis(~ . * 1, name = "inches"))
+
+# Make an interactive graph
+ggplotly(p)
+
+
+```

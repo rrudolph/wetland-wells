@@ -1,0 +1,23 @@
+---
+title: "Test_plotly_rendering"
+author: "Rudolph"
+date: "12/11/2019"
+output: html_document
+---
+
+```{r}
+library(plotly)
+
+b <- lapply(
+  setdiff(names(iris),
+          c("Sepal.Length","Species")),
+  function(x) {
+    plot_ly(iris, 
+            x = iris[["Sepal.Length"]],
+            y = iris[[x]], 
+            mode = "markers")
+  }
+)
+
+htmltools::tagList(b)
+```
