@@ -5,8 +5,10 @@
 
 import os, glob, re, sys
 
-inPath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data\Site Data"
-outPath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data\Processed Data"
+basePath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data" 
+
+inPath = basePath + os.sep + "Site Data"
+outPath = basePath + os.sep + "Processed Data"
 searchFiles = (".csv") 
 
 def walk_dir(dir_):
@@ -22,10 +24,12 @@ def walk_dir(dir_):
 
 files = walk_dir(inPath)
 
+pattern = re.compile(r"(NR-)(\w{2}\d+)")
+# pattern = re.compile(r"PH\d+")
+
 for file in files:
 	if "BaroMerge" in file:
 		print("Found valid csv file: " + file)
-		pattern = re.compile(r"PH\d+")
 		wellSearch = re.search(pattern, file)
 
 		well = wellSearch.group()

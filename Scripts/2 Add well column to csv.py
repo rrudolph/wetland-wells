@@ -6,18 +6,21 @@
 import pandas as pd
 import re, glob, os
 
-os.chdir(r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data\Processed Data")
+basePath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data" 
 
-outDir = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data\Final Output"
+inPath = basePath + os.sep + "Processed Data"
+outDir = basePath + os.sep + "Final Output"
 
 csv_files = glob.glob("*.csv")
 
-def add_well_column(csv_file):
+pattern = re.compile(r"(NR-)(\w{2}\d+)")
+# pattern = re.compile(r"PH\d+")
 
+for csv_file in csv_files:
+	csv_file = os.path.basename(csv_file)
+	
     outFile = outDir + os.sep + csv_file
     print(outFile)
-
-    pattern = re.compile(r"PH\d+")
 
     wellSearch = re.search(pattern, csv_file)
     well = wellSearch.group()
@@ -26,5 +29,3 @@ def add_well_column(csv_file):
 
     csv_input['Well'] = well
     csv_input.to_csv(outFile, index=False)
-
-map(add_well_column, csv_files)
