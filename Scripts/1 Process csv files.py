@@ -5,11 +5,21 @@
 
 import os, glob, re, sys
 
-basePath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data" 
+site = "CHIS" 
+
+if site == "YELL":
+	basePath = r"C:\Temp\Yellowstone wetland\PilotWells_YELL NR wells" 
+	pattern = re.compile(r"(NR-)(\w{2}\d+)")
+
+elif site == "CHIS":
+	basePath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data" 
+	pattern = re.compile(r"PH\d+")
+
 
 inPath = basePath + os.sep + "Site Data"
 outPath = basePath + os.sep + "Processed Data"
 searchFiles = (".csv") 
+
 
 def walk_dir(dir_):
     """
@@ -24,9 +34,6 @@ def walk_dir(dir_):
 
 files = walk_dir(inPath)
 
-pattern = re.compile(r"(NR-)(\w{2}\d+)")
-# pattern = re.compile(r"PH\d+")
-
 for file in files:
 	if "BaroMerge" in file:
 		print("Found valid csv file: " + file)
@@ -34,7 +41,7 @@ for file in files:
 
 		well = wellSearch.group()
 		print("Well: {}".format(well))
-		fileDate = file.split("\\")[-2]
+		# fileDate = file.split("\\")[-2]
 
 		outFile = outPath + os.sep + well + "_" + fileDate + ".csv"
 

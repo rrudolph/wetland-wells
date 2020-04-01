@@ -6,15 +6,20 @@
 import pandas as pd
 import re, glob, os
 
-basePath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data" 
+site = "CHIS" 
+
+if site == "YELL":
+	basePath = r"C:\Temp\Yellowstone wetland\PilotWells_YELL NR wells" 
+	pattern = re.compile(r"(NR-)(\w{2}\d+)")
+
+elif site == "CHIS":
+	basePath = r"T:\Restoration\Stream & Wetland Restoration\SCI_Riparian\Prisoners' Wetland\Well Data" 
+	pattern = re.compile(r"PH\d+") 
 
 inPath = basePath + os.sep + "Processed Data"
 outDir = basePath + os.sep + "Final Output"
 
 csv_files = glob.glob("*.csv")
-
-pattern = re.compile(r"(NR-)(\w{2}\d+)")
-# pattern = re.compile(r"PH\d+")
 
 for csv_file in csv_files:
 	csv_file = os.path.basename(csv_file)
