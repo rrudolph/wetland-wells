@@ -5,7 +5,7 @@
 
 import os, glob, re, sys
 
-site = "CHIS" 
+site = "YELL" 
 
 if site == "YELL":
 	basePath = r"C:\Temp\Yellowstone wetland\PilotWells_YELL NR wells" 
@@ -39,19 +39,19 @@ for file in files:
 		print("Found valid csv file: " + file)
 		wellSearch = re.search(pattern, file)
 
-		well = wellSearch.group()
-		print("Well: {}".format(well))
+		wellName = wellSearch.group()
+		print("Well: {}".format(wellName))
 		# fileDate = file.split("\\")[-2]
 
-		outFile = outPath + os.sep + well + "_" + fileDate + ".csv"
+		outFile = outPath + os.sep + wellName + ".csv"
 
 		print("Processing: " + outFile)
 
 		# Open a csv, start writing output when it hits "Date and Time,Seconds"
 		with open(file, 'r') as infile, open(outFile, 'w') as outfile:
-		    # Read the file line by line...
-		    for line in iter(infile.readline, ''):
-		        if "Date and Time,Seconds" in line:
-		            outfile.write(line)
-		            outfile.write(infile.read())
-		            break
+			# Read the file line by line...
+			for line in iter(infile.readline, ''):
+				if "Date and Time,Seconds" in line:
+					outfile.write(line)
+					outfile.write(infile.read())
+					break

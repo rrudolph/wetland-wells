@@ -6,7 +6,7 @@
 import pandas as pd
 import re, glob, os
 
-site = "CHIS" 
+site = "YELL" 
 
 if site == "YELL":
 	basePath = r"C:\Temp\Yellowstone wetland\PilotWells_YELL NR wells" 
@@ -19,18 +19,19 @@ elif site == "CHIS":
 inPath = basePath + os.sep + "Processed Data"
 outDir = basePath + os.sep + "Final Output"
 
-csv_files = glob.glob("*.csv")
+csv_files = glob.glob(inPath + os.sep + "*.csv")
 
 for csv_file in csv_files:
-	csv_file = os.path.basename(csv_file)
-	
-    outFile = outDir + os.sep + csv_file
+    print(csv_file)
+    csv_file_basename = os.path.basename(csv_file)
+
+    outFile = outDir + os.sep + csv_file_basename
     print(outFile)
 
     wellSearch = re.search(pattern, csv_file)
-    well = wellSearch.group()
+    wellName = wellSearch.group()
 
     csv_input = pd.read_csv(csv_file)
 
-    csv_input['Well'] = well
+    csv_input['Well'] = wellName
     csv_input.to_csv(outFile, index=False)
