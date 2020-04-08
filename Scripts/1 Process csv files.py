@@ -34,6 +34,7 @@ def walk_dir(dir_):
 
 files = walk_dir(inPath)
 
+
 for file in files:
 	if "BaroMerge" in file:
 		print("Found valid csv file: " + file)
@@ -52,6 +53,7 @@ for file in files:
 			# Read the file line by line...
 			for line in iter(infile.readline, ''):
 				if "Date and Time,Seconds" in line:
-					outfile.write(line)
+					lineStrip = line.replace(" ", "")
+					outfile.write(lineStrip)
 					outfile.write(infile.read())
 					break

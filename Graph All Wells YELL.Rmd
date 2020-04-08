@@ -15,19 +15,18 @@ library(scales)
 library(htmltools)
 library(here)
 library(knitr)
-
+ 
 wellData <- read_csv("Input/All_well_data_combined_YELL.csv", 
-    col_types = cols(`Barometric Pressure (PSI)` = col_skip(), 
-        `Date and Time` = col_datetime(format = "%m/%d/%Y %H:%M:%S %p"), 
-        `Depth (ft)` = col_skip(), 
-        Seconds = col_skip(), 
-        `Temperature (C)` = col_skip(), 
-        `Unnamed: 5` = col_skip(), 
-        `Unnamed: 6` = col_skip()))
+    col_types = cols(DateandTime = col_datetime(format = "%m/%d/%Y %H:%M")))
 
+wellData <- wellData %>% 
+  select(DateandTime, `Pressure(PSI)`, Well)
 
 # Rename the fields
 names(wellData) <- c('DateTime', 'PSI', 'Well' )
+
+# get rid of the NAs
+wellData <- drop_na(wellData)
 
 # Format the date field 
 wellData$Date <- format(wellData$DateTime, "%m-%d-%Y")
@@ -35,7 +34,7 @@ wellData$Date<- as.Date(wellData$Date, format="%m-%d-%Y")
 
 # Take a peek at the data
 glimpse(wellData)
-head(wellData)
+
 
 # Get the stats for each well needed to perform the calculations
 well_stats <- read_excel("Well Stats_NorthernRange.xlsx")
@@ -55,7 +54,8 @@ get_stat <- function(stat, wellName){
   return(return_stat)
   }
 
-# Graphing function accepting well name as the parameter 
+
+# Graphing function accepting well name as the parameter
 make_graph <- function(well){
 
   # Pull stats into variables based on well name
@@ -63,17 +63,20 @@ make_graph <- function(well){
   toc <- get_stat("toc", well)
   dgs <- get_stat("dgs", well)
   fbgs <- get_stat("fbgs", well)
-  
+
   # Select just the well needed, and perform the calculations into new fields
-  wellSelect <- wellData %>% 
-    filter(Well == well) %>% 
+  wellSelect <- wellData %>%
+    filter(Well == well) %>%
     mutate(WaterTableElevM = tow-toc+PSI*0.703772,
            GroundSurfaceElev = dgs,
            FtBelowGS = fbgs)
-  
+
   # Narrow down the min and max dates
   earliest <- min(wellSelect$Date)
   latest <- max(wellSelect$Date)
+
+
+
   
   # Prepare precip data
   # Source: http://climateanalyzer.science/python/u_thresh.py?station=santa_cruz_raws&year1=2011&year2=2019&title=Santa%20Cruz%20Island%20automated%20station&lowerthresh=daily&upperthresh=70&station_type=RAWS
@@ -116,9 +119,14 @@ make_graph <- function(well){
 
   }
  
-unique(wellData$Well)
+wells <- unique(wellData$Well)
 # wellList <- c("PH6", "PH7", "PH9", "PH16", "PH19", "PH20", "PH21", "PH22", "PH23")
-wellList <- c("NR-BD161","NR-BM305" ,"NR-DC003" ,"NR-LT203")
+
+for (w in wells){
+  cat(glue("'{w}',"))
+}
+
+wellList <- c('NR-BD161','NR-BM305','NR-CR66','NR-DC3','NR-DC4','NR-IP1','NR-IP128','NR-LT203','NR-LT74','NR-MB189','NR-OR349','NR-SG180','NR-TF26','NR-TL299','NR-TL34','NR-TL38','NR-WA320')
 
 
 # Generate a graph for each well name
